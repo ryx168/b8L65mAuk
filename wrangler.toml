@@ -1,0 +1,7 @@
+name = "b8L65mAuk"
+compatibility_date = "2024-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "xotours-db"
+database_id = "9c5fe0e2-2dd5-49d8-894f-e37f71b346a5"

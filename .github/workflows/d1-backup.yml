@@ -1,0 +1,44 @@
+name: D1 Database Backup
+
+on:
+  schedule:
+    - cron: '0 9 * * *'   # Daily at 9am UTC (auto backup)
+  workflow_dispatch:        # "Run workflow" button in the Actions tab (manual backup)
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Export xotours-db from remote D1
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          mkdir -p d1_backups
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H-%M-%SZ")
+          npx wrangler d1 export xotours-db --remote --output="d1_backups/xotours-db_${TIMESTAMP}.sql"
+          echo "BACKUP_FILE=xotours-db_${TIMESTAMP}.sql" >> "$GITHUB_ENV"
+
+      - name: Prune old backups (keep newest 30)
+        working-directory: d1_backups
+        run: |
+          ls -1t xotours-db_*.sql 2>/dev/null | tail -n +31 | xargs -r rm -v --
+
+      - name: Commit and push backup
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+          git add d1_backups
+          git diff --quiet && git diff --staged --quiet || (git commit -m "D1 backup: ${BACKUP_FILE}" && git pull --rebase origin main && git push)
