@@ -48,7 +48,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           mkdir -p d1_backups
-          TIMESTAMP=$(date -u +"%Y-%m-%dT%H-%M-%SZ")
+          TIMESTAMP=$(TZ='America/Los_Angeles' date +"%Y-%m-%dT%H-%M-%S_PT")
           npx wrangler d1 export xotours-db --remote --output="d1_backups/pre-restore-safety_${TIMESTAMP}.sql"
 
       - name: Restore selected backup into remote D1
